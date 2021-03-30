@@ -16,25 +16,20 @@ data = response.text
 
 document = BeautifulSoup(data, 'html.parser')
 
-prices = document.findAll(name='div', class_='list-card-price')
-links = document.findAll(name='a', class_='list-card-link list-card-link-top-margin')
-addresses = document.findAll(name='address', class_='list-card-addr')
+listings = document.find_all('article')
+listed_listings = []
 
-template = {
-    'price': '',
-    'url': '',
-    'address':''
-}
+for listing in listings:
+    new_dictionary = {
+        'address': listing.div.a.text,
+        'rent': listing.div.div.next_sibling()[0].text,
+        'link': listing.div.a.get('href')
+    }
 
-# now, why in god's name are there fewer links than prices or addresses?
-counter = 1
-for x in range(len(prices)):
-    print(f'                              {counter}')
-    print(prices[x].text)
-    print(links[x].text)
-    print(addresses[x].text)
-    counter += 1
+    listed_listings.append(new_dictionary)
 
+for i in listed_listings:
+    print(i)
 
 
 
