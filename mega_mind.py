@@ -4,14 +4,18 @@ import time
 from selenium import webdriver
 from bs4 import BeautifulSoup
 
+# zillow detects driver and returns a captcha w/o credentials
 REQUEST_HEADER = {
     'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:25.0) Gecko/20100101 Firefox/25.0',
     'Accept-Language': 'en-US',
 }
 
+# zillow results url -- application does not sign into and populate search form but relies on extant link
 DESTINATION_WEDDING = os.environ['ENV_DEST_LINK']
 FORM = os.environ['ENV_FORM_LINK']
 DRIVER_PATH = os.environ['ENV_DRIVER_PATH']
+
+# sleep time encourages element findability by driver (also looks more human)
 TRY_TIME = 3.5
 
 
@@ -21,6 +25,9 @@ class EstateAgent:
         self.neighborhood = DESTINATION_WEDDING
         self.paperwork = FORM
         self.upstart = webdriver.Chrome(DRIVER_PATH)
+        
+        # initialized with activated functions that in turn close out the driver once it's finished
+        # remove/reassign these or add additional time.sleep to improve visibility
         self.leads = self.find_listings()
         self.submit_findings()
 
@@ -31,8 +38,10 @@ class EstateAgent:
 
         data = response.text
 
+        # beautifulsoup scrapes and makes interactable the html 
         document = BeautifulSoup(data, 'html.parser')
 
+        # articles are the interactable 'cards' that zillow serves up in results
         listings = document.find_all('article')
 
         for listing in listings:
@@ -43,7 +52,9 @@ class EstateAgent:
             }
 
             leads.append(new_dictionary)
-
+            
+        # some results have rendant results deliniated with a '|' -- the more robust result is usually the latter
+        # this tidies up such results, but is optional
         for entry in leads:
             a = entry['address']
             if '|' in a:
@@ -57,6 +68,7 @@ class EstateAgent:
         driver = self.upstart
         leads = self.leads
 
+        # instead of using sheety api to interact with google sheets, the below links to a simple premade google form
         driver.get(self.paperwork)
         time.sleep(TRY_TIME)
 
@@ -78,13 +90,14 @@ class EstateAgent:
 
                 link_input.click()
                 link_input.send_keys(lead['link'])
-
+                
                 time.sleep(TRY_TIME)
 
                 submit_button.click()
 
                 time.sleep(TRY_TIME)
-
+                
+                # clicking through the submit field takes you to a refresh form option
                 refresh_link = driver.find_element_by_xpath('/html/body/div[1]/div[2]/div[1]/div/div[4]/a')
                 refresh_link.click()
         finally:
